@@ -1,7 +1,7 @@
 {
   "nickname": "Web Debugger",
   "name": "web-debugger",
-  "version": "1.0.2",
+  "version": "1.0.4",
   "description": "",
   "main": "lib/index.js",
   "scripts": {
@@ -11,7 +11,7 @@
   "bin": {
     "web-debugger": "lib/index.js"
   },
-  "keywords": [],
+  "keywords": ["web debugger", "web-debugger", "debug website", "debug safari", "debug chrome", "debug mozilla"],
   "author": "Harkal",
   "license": "ISC",
   "homepage": "https://github.com/harkal18/web-debugger#readme",

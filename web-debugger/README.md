@@ -12,7 +12,7 @@ Web Debugger enables develoepers to debug any browser from any desktop in [Node.
 
 ### Installation
 
-Dillinger requires [Node.js](https://nodejs.org/) v4+ to run.
+Web Debugger requires [Node.js](https://nodejs.org/) to run.
 
 Install the [Web Debugger](https://www.npmjs.com/package/web-debugger) CLI from npm
 
