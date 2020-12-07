@@ -44,14 +44,32 @@ export class DebuggerServerHandler {
         const wss = new WebSocket.Server({ server: server });
         wss.on('connection', (ws: WebSocket) => {
             this.ws = ws;
-            this.refreshSessions();
+            this.sessionsHandler.onFileChange.subscribe(async change => {
+                if (change) {
+                    const sessions: Map<string, Session> = await this.sessionsHandler.getSessions();
+                    const dataPacket: DataPacket = {
+                        api: API_ACTIVE_SESSIONS,
+                        data: {
+                            sessions: objectFromMap(sessions)
+                        }
+                    };
+                    this.ws.send(JSON.stringify(dataPacket));
+                }
+            });
             ws.on('message', (message: string) => {
                 try {
                     const dataPacket: DataPacket = JSON.parse(message);
                     if (dataPacket !== undefined) {
                         switch (dataPacket.api) {
                             case API_SYNC_LOGS:
-                                this.refreshLogs(dataPacket.data.sessionId);
+                                this.logsHandler.onFileChange.subscribe(async change => {
+                                    if (change) {
+                                        const logs: Array<Log> = await this.logsHandler.getClientLogs(dataPacket.data.sessionId);
+                                        dataPacket.data.logs =  logs
+                                        console.log(dataPacket);
+                                        this.ws.send(JSON.stringify(dataPacket));
+                                    }
+                                });
                                 break;
                         }
                     }
@@ -73,50 +91,5 @@ export class DebuggerServerHandler {
         });
 
     }
-
-    private refreshSessions() {
-        (async () => {
-            try {
-                if (this.ws !== undefined) {
-                    const sessions: Map<string, Session> = await this.sessionsHandler.getSessions();
-                    const dataPacket: DataPacket = {
-                        api: API_ACTIVE_SESSIONS,
-                        data: {
-                            sessions: objectFromMap(sessions)
-                        }
-                    };
-                    this.ws.send(JSON.stringify(dataPacket));
-                    setTimeout(() => {
-                        this.refreshSessions();
-                    }, 5000);
-                }
-            } catch (error) {
-                console.log(error);
-            }
-        })();
-    }
-
-    private refreshLogs(sessionId: string) {
-        (async () => {
-            try {
-                if (this.ws !== undefined) {
-                    const logs: Array<Log> = await this.logsHandler.getClientLogs(sessionId);
-                    const dataPacket: DataPacket = {
-                        api: API_SYNC_LOGS,
-                        data: {
-                            sessionId: sessionId,
-                            logs: logs
-                        }
-                    };
-                    this.ws.send(JSON.stringify(dataPacket));
-                    setTimeout(() => {
-                        this.refreshLogs(sessionId);
-                    }, 5000);
-                }
-            } catch (error) {
-                console.log(error);
-            }
-        })();
-    }
-
+    
 }

@@ -1,12 +1,18 @@
 import fs from 'fs';
 import path from 'path';
+import { BehaviorSubject } from 'rxjs';
+import { FileDatabaseHandler } from './FileDatabaseHandler';
 import { Log } from './Log';
 import { mapFromObject, objectFromMap } from './__utils__';
 
 const LOGS = path.resolve(__dirname, "../data/logs.json");
 
 
-export class LogsHandler {
+export class LogsHandler extends FileDatabaseHandler {
+    
+    getFilePath(): string {
+        return LOGS;
+    }
 
     private saveLogs(logs: Map<string, Array<Log>>): Promise<void> {
         return new Promise(async (resolve, reject) => {

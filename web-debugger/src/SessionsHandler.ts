@@ -1,17 +1,28 @@
 import fs from 'fs';
 import path from 'path';
+import { FileDatabaseHandler } from './FileDatabaseHandler';
 import { Session } from "./Session";
 import { mapFromObject, objectFromMap } from './__utils__';
 
 const SESSIONS = path.resolve(__dirname, "../data/sessions.json");
 
 
-export class SessionsHandler {
+export class SessionsHandler extends FileDatabaseHandler {
+
+    getFilePath(): string {
+        return SESSIONS;
+    }
 
     private saveSessions(sessions: Map<string, Session>): Promise<void> {
         return new Promise(async (resolve, reject) => {
             try {
-                fs.writeFile(SESSIONS, JSON.stringify(objectFromMap(sessions)), { flag: 'w' }, (error) => {
+                const temp: Map<string, Session> = new Map();
+                sessions.forEach((value: Session | any, sessionId: string) => {
+                    if(value.lastSeen > Date.now() - 10000){
+                        temp.set(sessionId, value);
+                    }
+                });
+                fs.writeFile(SESSIONS, JSON.stringify(objectFromMap(temp)), { flag: 'w' }, (error) => {
                     if (!error) {
                         resolve();
                     } else {
