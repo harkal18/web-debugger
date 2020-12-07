@@ -7,7 +7,8 @@ import express from 'express';
 import path from 'path';
 import { DebuggerServerHandler } from './DebuggerServerHandler';
 import { ClientServerHandler } from './ClientServerHandler';
-import { DatabaseHandler } from './DatabaseHandler';
+import { SessionsHandler } from './SessionsHandler';
+import { LogsHandler } from './LogsHandler';
 
 const { nickname, version } = require('../package.json');
 
@@ -48,9 +49,10 @@ if (command.version) {
     if (command.help) {
         // show help
     } else {
-        const databaseHandler: DatabaseHandler = new DatabaseHandler();
-        new ClientServerHandler(command.serverPort, databaseHandler);
-        new DebuggerServerHandler(command.debuggerPort, databaseHandler);
+        const sessionsHandler: SessionsHandler = new SessionsHandler();
+        const logsHandler: LogsHandler = new LogsHandler();
+        new ClientServerHandler(command.serverPort, sessionsHandler, logsHandler);
+        new DebuggerServerHandler(command.debuggerPort, sessionsHandler, logsHandler);
         // server handling here
 
         // debugger handling here

@@ -1,3 +1,4 @@
+import { ClientLogsHandler } from "./ClientLogsHandler";
 import { API_PING_SESSION, API_START_SESSION, DataPacket } from "./DataPacket";
 
 const maintainSession = (webSocket: WebSocket) => {
@@ -19,6 +20,7 @@ const maintainSession = (webSocket: WebSocket) => {
 }
 
 const socket = new WebSocket('ws://localhost:{PORT}');
+const clientLogsHandler = new ClientLogsHandler(socket);
 
 // Connection opened
 socket.addEventListener('open', (event) => {
@@ -43,6 +45,7 @@ socket.addEventListener('message', (event) => {
                     sessionId: dataPacket.data.sessionId
                 }
                 maintainSession(socket);
+                clientLogsHandler.start();
                 break;
         }
     } catch (error) {

@@ -1,22 +1,23 @@
-
-import { Server } from 'http';
 import * as WebSocket from 'ws';
 import express from 'express';
-import { Express } from 'express';
 import fs from 'fs';
 import path from 'path';
-
-import { BehaviorSubject, Subscription } from 'rxjs'
 import { Session } from './Session';
-import { API_ACTIVE_SESSIONS, DataPacket } from './DataPacket';
+import { API_ACTIVE_SESSIONS, API_SYNC_LOGS, DataPacket } from './DataPacket';
 import { objectFromMap } from './__utils__';
-import { DatabaseHandler } from './DatabaseHandler';
+import { SessionsHandler } from './SessionsHandler';
+import { LogsHandler } from './LogsHandler';
+import { Log } from './Log';
 
 export class DebuggerServerHandler {
 
     ws?: WebSocket | any;
 
-    constructor(public port: number, public databaseHandler: DatabaseHandler) {
+    constructor(
+        public port: number,
+        public sessionsHandler: SessionsHandler,
+        public logsHandler: LogsHandler
+    ) {
 
         const app = express();
         app.use((request, respopnse, next) => {
@@ -49,7 +50,9 @@ export class DebuggerServerHandler {
                     const dataPacket: DataPacket = JSON.parse(message);
                     if (dataPacket !== undefined) {
                         switch (dataPacket.api) {
-                            // here we can drop connections of the clients
+                            case API_SYNC_LOGS:
+                                this.refreshLogs(dataPacket.data.sessionId);
+                                break;
                         }
                     }
                 } catch (error) {
@@ -75,7 +78,7 @@ export class DebuggerServerHandler {
         (async () => {
             try {
                 if (this.ws !== undefined) {
-                    const sessions: Map<string, Session> = await this.databaseHandler.getSessions();
+                    const sessions: Map<string, Session> = await this.sessionsHandler.getSessions();
                     const dataPacket: DataPacket = {
                         api: API_ACTIVE_SESSIONS,
                         data: {
@@ -85,6 +88,29 @@ export class DebuggerServerHandler {
                     this.ws.send(JSON.stringify(dataPacket));
                     setTimeout(() => {
                         this.refreshSessions();
+                    }, 5000);
+                }
+            } catch (error) {
+                console.log(error);
+            }
+        })();
+    }
+
+    private refreshLogs(sessionId: string) {
+        (async () => {
+            try {
+                if (this.ws !== undefined) {
+                    const logs: Array<Log> = await this.logsHandler.getClientLogs(sessionId);
+                    const dataPacket: DataPacket = {
+                        api: API_SYNC_LOGS,
+                        data: {
+                            sessionId: sessionId,
+                            logs: logs
+                        }
+                    };
+                    this.ws.send(JSON.stringify(dataPacket));
+                    setTimeout(() => {
+                        this.refreshLogs(sessionId);
                     }, 5000);
                 }
             } catch (error) {

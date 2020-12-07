@@ -6,7 +6,7 @@ import { mapFromObject, objectFromMap } from './__utils__';
 const SESSIONS = path.resolve(__dirname, "../data/sessions.json");
 
 
-export class DatabaseHandler {
+export class SessionsHandler {
 
     private saveSessions(sessions: Map<string, Session>): Promise<void> {
         return new Promise(async (resolve, reject) => {
@@ -96,5 +96,5 @@ export class DatabaseHandler {
             }
         });
     }
-
+    
 }

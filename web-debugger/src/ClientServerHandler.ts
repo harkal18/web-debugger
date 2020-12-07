@@ -1,33 +1,35 @@
 
-import { Server } from 'http';
 import * as WebSocket from 'ws';
 import express from 'express';
-import { Express } from 'express';
 import fs from 'fs';
 import path from 'path';
-import { DebuggerServerHandler } from './DebuggerServerHandler';
-import { API_PING_SESSION, API_START_SESSION, DataPacket } from './DataPacket';
+import { API_PING_SESSION, API_START_SESSION, API_SYNC_LOGS, DataPacket } from './DataPacket';
 import { Session } from './Session';
 import { generateRandomString } from './__utils__';
-import { DatabaseHandler } from './DatabaseHandler';
+import { SessionsHandler } from './SessionsHandler';
+import { LogsHandler } from './LogsHandler';
 
 
 export class ClientServerHandler {
 
-    constructor(public port: number, public databaseHandler: DatabaseHandler) {
+    constructor(
+        public port: number, 
+        public sessionsHandler: SessionsHandler,
+        public logsHandler: LogsHandler
+    ) {
 
         const app = express();
         app.use((request, respopnse, next) => {
             const filename = path.basename(request.url);
-            if(filename ==="__web_debugger_client__.js") {
+            if (filename === "__web_debugger_client__.js") {
                 fs.readFile(path.join(__dirname, '../client/__web_debugger_client__.js'), "utf8", (error, data) => {
-                    if(!error){
+                    if (!error) {
                         const js = data.replace("{PORT}", `${port}`);
                         respopnse.set('content-type', 'text/javascript');
                         respopnse.send(js);
                     }
                 });
-            }else{
+            } else {
                 next();
             }
         });
@@ -42,8 +44,8 @@ export class ClientServerHandler {
             ws.on('message', async (message: string) => {
                 try {
                     const dataPacket: DataPacket = JSON.parse(message);
-                    if(dataPacket !== undefined) {
-                        switch(dataPacket.api) {
+                    if (dataPacket !== undefined) {
+                        switch (dataPacket.api) {
                             case API_START_SESSION:
                                 const session: Session | any = {
                                     id: generateRandomString(21),
@@ -51,23 +53,26 @@ export class ClientServerHandler {
                                     time: Date.now(),
                                     lastSeen: Date.now()
                                 }
-                                databaseHandler.addSession(session);
+                                sessionsHandler.addSession(session);
                                 dataPacket.data = {
                                     sessionId: session.id
                                 }
                                 ws.send(JSON.stringify(dataPacket));
                                 break;
-                                case API_PING_SESSION:
-                                    const temp = await this.databaseHandler.getSession(dataPacket.data.sessionId);
-                                    if(temp !== undefined){
-                                        const session: Session | any = temp;
-                                        session.lastSeen = Date.now();
-                                        databaseHandler.addSession(session);
-                                    }
-                                    break;
+                            case API_PING_SESSION:
+                                const temp = await this.sessionsHandler.getSession(dataPacket.data.sessionId);
+                                if (temp !== undefined) {
+                                    const session: Session | any = temp;
+                                    session.lastSeen = Date.now();
+                                    sessionsHandler.addSession(session);
+                                }
+                                break;
+                            case API_SYNC_LOGS:
+                                logsHandler.saveClientLog(dataPacket.data.sessionId, dataPacket.data.log);
+                                break;
                         }
                     }
-                }catch(error){
+                } catch (error) {
                     console.log(error);
                 }
             });
