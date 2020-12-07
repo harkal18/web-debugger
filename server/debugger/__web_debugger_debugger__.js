@@ -1,0 +1,1 @@
+(()=>{"use strict";const e=new WebSocket("ws://localhost:{PORT}");e.addEventListener("open",(e=>{})),e.addEventListener("message",(e=>{try{const s=JSON.parse(e.data);switch(s.api){case"API_ACTIVE_SESSIONS":console.log(s.data)}}catch(e){console.log(e)}}))})();

@@ -1,0 +1,3 @@
+# to be run in linux only
+# basicallly this appends "#!/usr/bin/env node" at the beginning of file at "./lib/index.js"
+tsc && sed -i '1s/^/\#\!\/usr\/bin\/env node\n/' ./lib/index.js

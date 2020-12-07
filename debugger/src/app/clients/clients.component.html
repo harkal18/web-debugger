@@ -1,0 +1,6 @@
+<div>
+    <div *ngFor="let session of sessions">
+        <a [routerLink]="session.id">{{ session.id }}</a>
+        <span> {{ session.userAgent }}</span>
+    </div>
+</div>

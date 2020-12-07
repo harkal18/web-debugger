@@ -1,0 +1,43 @@
+{
+  "nickname": "Web Debugger",
+  "name": "web-debugger",
+  "version": "1.0.0",
+  "description": "",
+  "main": "lib/index.js",
+  "scripts": {
+    "test": "tsc && node lib",
+    "build": "./build"
+  },
+  "bin": {
+    "web-debugger": "lib/index.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@octokit/auth-basic": "^1.4.8",
+    "@octokit/rest": "^18.0.12",
+    "@types/argparse": "^2.0.4",
+    "@types/clear": "^0.1.1",
+    "@types/express": "^4.17.9",
+    "@types/figlet": "^1.2.1",
+    "@types/table": "^6.0.0",
+    "@types/ws": "^7.4.0",
+    "arg": "^5.0.0",
+    "argparse": "^2.0.1",
+    "chalk": "^4.1.0",
+    "clear": "^0.1.0",
+    "clui": "^0.3.6",
+    "configstore": "^5.0.1",
+    "express": "^4.17.1",
+    "figlet": "^1.5.0",
+    "inquirer": "^7.3.3",
+    "lodash": "^4.17.20",
+    "minimist": "^1.2.5",
+    "rxjs": "^6.6.3",
+    "simple-git": "^2.24.0",
+    "table": "^6.0.4",
+    "touch": "^3.1.0",
+    "ws": "^7.4.1"
+  }
+}
