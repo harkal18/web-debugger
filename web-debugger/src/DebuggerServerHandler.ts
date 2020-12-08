@@ -3,11 +3,12 @@ import express from 'express';
 import fs from 'fs';
 import path from 'path';
 import { Session } from './Session';
-import { API_ACTIVE_SESSIONS, API_SYNC_LOGS, DataPacket } from './DataPacket';
+import { API_ACTIVE_SESSIONS, API_SYNC_FRAME, API_SYNC_LOGS, DataPacket } from './DataPacket';
 import { objectFromMap } from './__utils__';
 import { SessionsHandler } from './SessionsHandler';
 import { LogsHandler } from './LogsHandler';
 import { Log } from './Log';
+import { FrameHandler } from './FrameHandler';
 
 export class DebuggerServerHandler {
 
@@ -22,9 +23,8 @@ export class DebuggerServerHandler {
         const app = express();
         app.use((request, respopnse, next) => {
             const filename = path.basename(request.url);
-            console.log(filename);
-            if (filename === "__web_debugger_debugger__.js") {
-                fs.readFile(path.join(__dirname, '../debugger/__web_debugger_debugger__.js'), "utf8", (error, data) => {
+            if (filename.startsWith("main") && filename.endsWith(".js")) {
+                fs.readFile(path.resolve(__dirname, '../debugger', filename), "utf8", (error, data) => {
                     if (!error) {
                         const js = data.replace("{PORT}", `${port}`);
                         respopnse.set('content-type', 'text/javascript');
@@ -65,12 +65,21 @@ export class DebuggerServerHandler {
                                 this.logsHandler.onFileChange.subscribe(async change => {
                                     if (change) {
                                         const logs: Array<Log> = await this.logsHandler.getClientLogs(dataPacket.data.sessionId);
-                                        dataPacket.data.logs =  logs
-                                        console.log(dataPacket);
+                                        dataPacket.data.logs = logs
                                         this.ws.send(JSON.stringify(dataPacket));
                                     }
                                 });
                                 break;
+                                case API_SYNC_FRAME:
+                                    const frameHandler = new FrameHandler(dataPacket.data.sessionId);
+                                    frameHandler.onFileChange.subscribe(async change => {
+                                        if (change) {
+                                            const frame = await frameHandler.getClientFrame();
+                                            dataPacket.data.frame = frame
+                                            this.ws.send(JSON.stringify(dataPacket));
+                                        }
+                                    });
+                                    break;
                         }
                     }
                 } catch (error) {
@@ -91,5 +100,5 @@ export class DebuggerServerHandler {
         });
 
     }
-    
+
 }

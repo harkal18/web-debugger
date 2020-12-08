@@ -3,40 +3,78 @@ import * as WebSocket from 'ws';
 import express from 'express';
 import fs from 'fs';
 import path from 'path';
-import { API_PING_SESSION, API_START_SESSION, API_SYNC_LOGS, DataPacket } from './DataPacket';
+import { JSDOM } from 'jsdom';
+import { API_PING_SESSION, API_START_SESSION, API_SYNC_FRAME, API_SYNC_LOGS, DataPacket } from './DataPacket';
 import { Session } from './Session';
 import { generateRandomString } from './__utils__';
 import { SessionsHandler } from './SessionsHandler';
 import { LogsHandler } from './LogsHandler';
+import { FrameHandler } from './FrameHandler';
 
+const getHtml = (filename: string, port: number) => {
+    return new Promise((resolve, reject) => {
+        try {
+            fs.readFile(path.join(__dirname, '../client/__web_debugger_client__.js'), "utf8", (error, javascript) => {
+                if (!error) {
+                    fs.readFile(filename, "utf8", (error, html) => {
+                        if (!error) {
+                            const dom = new JSDOM(html);
+                            const script = dom.window.document.createElement("script");
+                            script.innerHTML = javascript.replace("{PORT}", `${port}`);
+                            dom.window.document.body.appendChild(script);
+                            // dom.window.document.body.append(`<script>${javascript.replace("{PORT}", `${port}`)}</script>`);
+                            resolve(dom.serialize());
+                        }else{
+                            resolve(reject(error));
+                        }
+                    });
+                }else{
+                    resolve(reject(error));
+                }
+            });
+        }catch(error){
+            reject(error);
+        }
+    });
+}
 
 export class ClientServerHandler {
 
     constructor(
-        public port: number, 
+        public directory: string,
+        public port: number,
         public sessionsHandler: SessionsHandler,
         public logsHandler: LogsHandler
     ) {
 
         const app = express();
-        app.use((request, respopnse, next) => {
+        app.use(async (request, response, next) => {
             const filename = path.basename(request.url);
-            if (filename === "__web_debugger_client__.js") {
-                fs.readFile(path.join(__dirname, '../client/__web_debugger_client__.js'), "utf8", (error, data) => {
-                    if (!error) {
-                        const js = data.replace("{PORT}", `${port}`);
-                        respopnse.set('content-type', 'text/javascript');
-                        respopnse.send(js);
-                    }
+            if(path.extname(filename) === ".html"){
+                getHtml(filename, port).then(html => {
+                    response.set('content-type', 'text/html');
+                    response.send(html);
+                }).catch(error => {
+                    console.log(error);
+                    response.set('content-type', 'text/html');
+                    response.send("<h1>404</h1>");
                 });
-            } else {
+            }else{
                 next();
             }
         });
-        app.use(express.static(path.join(__dirname, '../client')));
-        // directoryApp.get('/', function (request, response) {
-        //     response.send('Hello World');
-        // });
+        app.get('/', (request, response) => {
+            const filename = path.resolve(directory, "index.html");
+            getHtml(filename, port).then(html => {
+                response.set('content-type', 'text/html');
+                response.send(html);
+            }).catch(error => {
+                console.log(error);
+                response.set('content-type', 'text/html');
+                response.send("<h1>404</h1>");
+            });
+        });
+        app.use(express.static(directory, { index: false }));
         const server = app.listen(port);
 
         const wss = new WebSocket.Server({ server: server });
@@ -53,7 +91,7 @@ export class ClientServerHandler {
                                     time: Date.now(),
                                     lastSeen: Date.now()
                                 }
-                                sessionsHandler.addSession(session);
+                                await sessionsHandler.addSession(session);
                                 dataPacket.data = {
                                     sessionId: session.id
                                 }
@@ -68,7 +106,10 @@ export class ClientServerHandler {
                                 }
                                 break;
                             case API_SYNC_LOGS:
-                                logsHandler.saveClientLog(dataPacket.data.sessionId, dataPacket.data.log);
+                                await logsHandler.saveClientLog(dataPacket.data.sessionId, dataPacket.data.log);
+                                break;
+                            case API_SYNC_FRAME:
+                                await new FrameHandler(dataPacket.data.sessionId).saveClientFrame(dataPacket.data.frame);
                                 break;
                         }
                     }

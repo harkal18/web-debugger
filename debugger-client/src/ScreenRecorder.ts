@@ -6,7 +6,7 @@ export class ScreenRecorder {
 
     recorder: any;
 
-    constructor() {
+    constructor(fps: number) {
         const canvas: any = document.querySelector('canvas');
         // Optional frames per second argument.
         const stream = canvas.captureStream(25);

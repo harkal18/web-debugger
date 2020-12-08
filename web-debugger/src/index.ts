@@ -51,11 +51,11 @@ if (command.version) {
     } else {
         const sessionsHandler: SessionsHandler = new SessionsHandler();
         const logsHandler: LogsHandler = new LogsHandler();
-        new ClientServerHandler(command.serverPort, sessionsHandler, logsHandler);
+        new ClientServerHandler(command.directory, command.serverPort, sessionsHandler, logsHandler);
         new DebuggerServerHandler(command.debuggerPort, sessionsHandler, logsHandler);
-        // server handling here
-
-        // debugger handling here
+        
+        console.log(chalk.yellow(`Serving ${command.directory} at http://localhost:${command.serverPort}`));
+        console.log(chalk.yellow(`Serving debugger at http://localhost:${command.debuggerPort}`));
 
     }
 }

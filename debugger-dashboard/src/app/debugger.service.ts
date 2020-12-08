@@ -7,6 +7,7 @@ export const API_PING_SESSION = "API_PING_SESSION";
 
 export const API_ACTIVE_SESSIONS = "API_ACTIVE_SESSIONS";
 export const API_SYNC_LOGS = "API_SYNC_LOGS";
+export const API_SYNC_FRAME = "API_SYNC_FRAME";
 
 export class DataPacket {
   error?: boolean;
@@ -36,6 +37,7 @@ export class DebuggerService {
   socket: WebSocket;
   sessions: BehaviorSubject<Map<string, Session>> = new BehaviorSubject(new Map());
   logs: Map<string, BehaviorSubject<Array<Log>>> = new Map();
+  frames: Map<string, BehaviorSubject<string | any>> = new Map();
 
   constructor() {
     if (isDevMode()) {
@@ -60,6 +62,9 @@ export class DebuggerService {
           case API_SYNC_LOGS:
             this.logs.get(dataPacket.data.sessionId)?.next(dataPacket.data.logs);
             break;
+          case API_SYNC_FRAME:
+            this.frames.get(dataPacket.data.sessionId)?.next(dataPacket.data.frame);
+            break;
         }
       } catch (error) {
         console.log(error);
@@ -74,10 +79,23 @@ export class DebuggerService {
         sessionId: sessionId
       }
     }));
-    if(this.logs.get(sessionId) === undefined){
+    if (this.logs.get(sessionId) === undefined) {
       this.logs.set(sessionId, new BehaviorSubject(<Array<Log>>[]));
     }
     return this.logs.get(sessionId);
+  }
+
+  syncClientFrames(sessionId: string): BehaviorSubject<string | undefined> | any {
+    this.socket.send(JSON.stringify({
+      api: API_SYNC_FRAME,
+      data: {
+        sessionId: sessionId
+      }
+    }));
+    if (this.frames.get(sessionId) === undefined) {
+      this.frames.set(sessionId, new BehaviorSubject(undefined));
+    }
+    return this.frames.get(sessionId);
   }
 
 }

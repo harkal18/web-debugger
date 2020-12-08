@@ -1,0 +1,2 @@
+# after building the dashboard copy the files to cli
+cp -r ./dist/debugger/* ../web-debugger/debugger
